@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Data Pipeline Configuration Web Application
 
-## Getting Started
+A production-ready wizard interface for configuring data pipelines, built with Next.js, TypeScript, and shadcn/ui.
 
-First, run the development server:
+## Tech Stack
 
+- **Framework**: Next.js 14+ (App Router)
+- **Language**: TypeScript
+- **UI Component Library**: shadcn/ui
+- **Styling**: Tailwind CSS v4
+- **State Management**: Zustand (Global Wizard State)
+- **Data Fetching**: TanStack Query (React Query) v5
+- **Forms**: React Hook Form
+- **HTTP Client**: Axios
+
+## Features
+
+- **5-Step Configuration Wizard**:
+  1. **Datasources**: Searchable grid of available datasources.
+  2. **Credentials**: Selection of authenticated accounts for the chosen datasource.
+  3. **Reports**: Multi-selection of available default report templates.
+  4. **Levels**: Dynamic, hierarchical dropdowns for report level configuration.
+  5. **Review**: Summary of all selections before submission.
+- **Robust Error Handling**: Toast notifications and empty states for API failures.
+- **Loading States**: Skeleton loaders for smooth UX.
+- **Responsive Design**: Mobile-friendly layout.
+
+## Setup & Installation
+
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Environment Configuration**:
+   The project comes with a `.env.local` file pre-configured with the staging API details.
+   ```
+   NEXT_PUBLIC_API_BASE_URL=https://api-stage.datachannel.co
+   ...
+   ```
+
+3. **Run Development Server**:
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+4. **Build for Production**:
+   ```bash
+   npm run build
+   npm start
+   ```
+
+## Architecture
+
+- **`lib/api-client.ts`**: Centralized Axios instance with interceptors and hardcoded headers (as per requirements).
+- **`lib/hooks/`**: Custom React Query hooks for each API endpoint (`useDatasources`, `useCredentials`, etc.).
+- **`store/pipeline-store.ts`**: Zustand store managing the entire wizard state (current step, selections, hierarchy).
+- **`components/wizard/`**: Individual step components (`step-datasources.tsx`, etc.) and the main `wizard-container.tsx`.
+- **`components/ui/`**: Reusable UI components from shadcn/ui.
+
+## Testing
+
+Run the build command to verify type safety and compilation:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
