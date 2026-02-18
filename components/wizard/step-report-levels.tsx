@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useEffect } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
+
 // Recursive component for rendering levels
 function LevelSelector({
     level,
@@ -26,10 +27,23 @@ function LevelSelector({
     onChange: (levelId: number, values: any[]) => void,
     disabled: boolean
 }) {
-    const { data: values, isLoading, isError } = useLevelValues(level.level_id, credentialId);
+    // console.log('Rendering LevelSelector for level:', level, 'with credentialId:', credentialId, 'and selectedValues:', selectedValues);
 
-    // If this level has no value key yet, initialized it
-    const currentSelection = selectedValues[level.level_id] || [];
+    const levelId = level.id;
+    const currentSelection = selectedValues[levelId] || [];
+
+    // Construct parentPayload from the parent's selected values
+    const parentId = level.parent_level_id;
+    const parentSelection = parentId ? selectedValues[parentId] : [];
+
+    // Map to include only id and name as requested
+    const parentPayload = parentSelection?.map(val => ({
+        id: val.id || val,
+        name: val.name || val
+    }));
+
+    // Only fetch if not disabled (meaning parent is selected or it is root)
+    const { data: values, isLoading, isError } = useLevelValues(levelId, credentialId, parentPayload, !disabled);
 
     return (
         <div className="relative border-l-2 border-muted pl-6 pb-6 last:pb-0">
@@ -37,7 +51,7 @@ function LevelSelector({
 
             <div className="space-y-3">
                 <Label className="text-base font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-                    {level.level_name}
+                    {level.name || level.level_name}
                 </Label>
 
                 {isError ? (
@@ -52,13 +66,12 @@ function LevelSelector({
                         value={currentSelection.length > 0 ? (currentSelection[0]?.id || currentSelection[0]) : undefined}
                         onValueChange={(val) => {
                             // Find the full object
-                            const selectedObj = values?.find(v => (v.id || v) === val);
-                            // We pass it as array because store expects array (future proofing for multi-select levels)
-                            if (selectedObj) onChange(level.level_id, [selectedObj]);
+                            const selectedObj = values?.find((v: any) => (v.id || v) === val);
+                            if (selectedObj) onChange(levelId, [selectedObj]);
                         }}
                     >
                         <SelectTrigger className="w-full max-w-md">
-                            <SelectValue placeholder={isLoading ? "Loading values..." : `Select ${level.level_name}`} />
+                            <SelectValue placeholder={isLoading ? "Loading values..." : `Select ${level.name || level.level_name}`} />
                         </SelectTrigger>
                         <SelectContent>
                             {values?.map((val: any) => {
@@ -140,16 +153,17 @@ export function StepReportLevels() {
     if (!selectedCredential) return null; // Should not happen due to wizard guards
 
     return (
-        <Card className="border-none shadow-none">
+        <Card className="border-none shadow-none" >
             <CardContent className="space-y-2 pt-2">
-                {levels.map((level, index) => {
+                {levels.map((level: any) => {
                     // Logic: A level is enabled only if its parent level has a selection (or if it's the root)
-                    const parentLevelId = index > 0 ? levels[index - 1].level_id : null;
-                    const isEnabled = index === 0 || (parentLevelId && selectedLevelValues[parentLevelId]?.length > 0);
+                    const isRoot = !level.parent_level_id;
+                    const parentHasSelection = selectedLevelValues[level.parent_level_id]?.length > 0;
+                    const isEnabled = isRoot || parentHasSelection;
 
                     return (
                         <LevelSelector
-                            key={level.level_id}
+                            key={level.id}
                             level={level}
                             credentialId={selectedCredential.id}
                             selectedValues={selectedLevelValues}

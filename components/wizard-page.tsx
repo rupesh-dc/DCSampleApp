@@ -7,8 +7,9 @@ import { StepDatasources } from '@/components/wizard/step-datasources';
 import { StepCredentials } from '@/components/wizard/step-credentials';
 import { StepDefaultReports } from '@/components/wizard/step-default-reports';
 import { StepReportLevels } from '@/components/wizard/step-report-levels';
+import { StepConfiguration } from '@/components/wizard/step-configuration';
 import { StepReview } from '@/components/wizard/step-review';
-import { usePipelineStore } from '@/store/pipeline-store';
+import { usePipelineStore, Step } from '@/store/pipeline-store';
 import { useCreateConfiguredReport } from '@/lib/hooks/use-create-configured-report';
 import { toast } from 'sonner';
 
@@ -21,6 +22,8 @@ export default function WizardPage() {
         selectedReportTemplates,
         levelHierarchy,
         selectedLevelValues,
+        clientName,
+        schedules,
         reset
     } = usePipelineStore();
 
@@ -38,6 +41,9 @@ export default function WizardPage() {
                 setStep('levels');
                 break;
             case 'levels':
+                setStep('configuration');
+                break;
+            case 'configuration':
                 setStep('review');
                 break;
             case 'review':
@@ -57,8 +63,11 @@ export default function WizardPage() {
             case 'levels':
                 setStep('reports');
                 break;
-            case 'review':
+            case 'configuration':
                 setStep('levels');
+                break;
+            case 'review':
+                setStep('configuration');
                 break;
         }
     };
@@ -67,18 +76,27 @@ export default function WizardPage() {
         if (!selectedDatasource || !selectedCredential) return;
 
         // Convert store structure to API payload structure
-        const levelsPayload = levelHierarchy.map(l => ({
-            level_id: l.level_id,
-            level_name: l.level_name,
-            value: selectedLevelValues[l.level_id] || []
-        })).filter(l => l.value.length > 0); // Only send levels with values? Confirm with API spec if empty levels allowed.
+        const levelsPayload = levelHierarchy.map(l => {
+            const id = l.id;
+            return {
+                level_id: id,
+                level_name: l.name,
+                value: selectedLevelValues[id] || []
+            };
+        }).filter(l => l.value.length > 0); // Only send levels with values? Confirm with API spec if empty levels allowed.
 
         const payload = {
             credential_id: selectedCredential.id,
             levels: levelsPayload,
-            client_name: "My Configured Report", // Ideally this should be an input in the review step
+            client_name: clientName,
             templates: selectedReportTemplates.map(t => t.id),
-            schedules: [] // As per requirement, empty for now or default
+            schedules: selectedReportTemplates.map(t => ({
+                template_id: t.id,
+                scheduling: {
+                    manual_run: 0,
+                    cron_string: schedules[t.id] || ""
+                }
+            }))
         };
 
         toast.promise(createReportMutation.mutateAsync(payload), {
@@ -112,10 +130,13 @@ export default function WizardPage() {
                 // Simple validation: Ensure at least the first level has a selection if hierarchy exists
                 // More strict: Ensure ALL levels matching parent/child dependencies are filled
                 // For MVP: Check if we have values for the levels that are rendered
-                // This can be complex depending on API behavior (some levels optional?)
-                // Let's enforce: If there are levels, at least one must be configured? 
-                // Or strictly: All levels must be configured.
-                return levelHierarchy.some(l => !selectedLevelValues[l.level_id] || selectedLevelValues[l.level_id].length === 0);
+                // We use level_id first, then fallback to id to match LevelSelector logic
+                return levelHierarchy.some(l => {
+                    const id = l.id;
+                    return !selectedLevelValues[id] || selectedLevelValues[id].length === 0;
+                });
+            case 'configuration':
+                return !clientName || clientName.trim() === '';
             case 'review':
                 return false;
             default:
@@ -124,11 +145,12 @@ export default function WizardPage() {
     };
 
     // Dynamic Titles
-    const stepTitles = {
+    const stepTitles: Record<Step, { title: string; desc: string }> = {
         datasources: { title: "Select Datasource", desc: "Choose the source you want to pull data from." },
         credentials: { title: "Select Credential", desc: "Choose an authenticated account." },
         reports: { title: "Select Reports", desc: "Choose the default reports to configure." },
         levels: { title: "Configure Levels", desc: "Set up the report hierarchy." },
+        configuration: { title: "Configure Details", desc: "Set client name and schedules." },
         review: { title: "Review Configuration", desc: "Verify your settings before creating." }
     };
 
@@ -146,6 +168,7 @@ export default function WizardPage() {
             {currentStep === 'credentials' && <StepCredentials />}
             {currentStep === 'reports' && <StepDefaultReports />}
             {currentStep === 'levels' && <StepReportLevels />}
+            {currentStep === 'configuration' && <StepConfiguration />}
             {currentStep === 'review' && <StepReview />}
         </WizardContainer>
     );

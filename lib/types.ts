@@ -31,9 +31,8 @@ export interface Credential {
 
 export interface DefaultReportTemplate {
     id: number;
-    name: string;
-    description?: string;
-    category?: string;
+    dataset_name: string;
+    dataset_description?: string;
 }
 
 export interface DefaultReport {
@@ -41,7 +40,13 @@ export interface DefaultReport {
     levels: ReportLevel[];
     client_name: string;
     templates: number[];
-    schedules: any[];
+    schedules: {
+        template_id: number;
+        scheduling: {
+            manual_run: number;
+            cron_string: string;
+        };
+    }[];
 }
 
 export interface LevelValue {
@@ -50,9 +55,15 @@ export interface LevelValue {
 }
 
 export interface ReportLevel {
-    level_id: number;
-    level_name: string;
+    id: number;
+    display_name: string;
     name: string;
+    level_number: number;
+    tooltip_description?: string | null;
+    parent_level_id?: number | null;
+    max_no_of_select: number;
+    required: number;
+    parent_id_key?: string | null;
     value?: LevelValue[]; // Pre-populated values or selected values
     is_dynamic?: boolean; // Internal flag to know if we need to fetch values
 }
@@ -66,5 +77,11 @@ export interface ConfiguredReportPayload {
     }[];
     client_name: string;
     templates: number[];
-    schedules: any[];
+    schedules: {
+        template_id: number;
+        scheduling: {
+            manual_run: number;
+            cron_string: string;
+        };
+    }[];
 }

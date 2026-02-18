@@ -16,9 +16,7 @@ export function useDefaultReports(datasourceSlug?: string) {
             // If the API returns { message: "Success", data: [] }, then fetcher returns [].
             // In that case, we should just return that array.
 
-            const data = await fetcher<any>(`/api/v1/default-report/${datasourceSlug}`, {
-                'default-reports': 'all'
-            });
+            const data = await fetcher<any>(`/api/v1/templates/${datasourceSlug}`);
 
             // If data is already an array, it's the reports list
             if (Array.isArray(data)) return data;

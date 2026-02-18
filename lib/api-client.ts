@@ -1,11 +1,11 @@
 import axios from 'axios';
 import { ApiResponse } from './types';
 
-// Hardcoded for now as per instructions, ideally move to env vars
-const API_BASE_URL = 'https://api-stage.datachannel.co';
-const ACCOUNT_SLUG = 'dc-frontendtest-004';
-const API_KEY = '4c2d631cef9afbfba65b9873673a3fc4';
-const WORKSPACE_ID = '57';
+// Load credentials from environment variables
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const ACCOUNT_SLUG = process.env.NEXT_PUBLIC_ACCOUNT_SLUG;
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
+const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID;
 
 export const apiClient = axios.create({
     baseURL: API_BASE_URL,
@@ -51,7 +51,13 @@ apiClient.interceptors.response.use(
 export const fetcher = async <T>(url: string, params?: any): Promise<T> => {
     const response = await apiClient.get<ApiResponse<T>>(url, { params });
     console.log(`[API] ${url} response:`, response.data);
-    return response.data.data;
+    // Ensure we always return a value, not undefined
+    const result = response.data.data;
+    if (result === undefined) {
+        console.warn(`[API] ${url} returned undefined data, returning empty object/array`);
+        return {} as T;
+    }
+    return result;
 };
 
 // Generic poster function
